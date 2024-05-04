@@ -1,0 +1,23 @@
+"<cmd_type>:<params>"
+
+<cmd_type>: Type of the command
+<params>:   Parameters
+
+* Downloading case: The user want to download a file from the metainfo file
+    <cmd_type>: "Download"
+    <params>:   Path of the metainfo file (.bin file)
+
+    Example: The user want to download CV.pdf file from metainfo file (CV_info.json) of CV.pdf (Path: \metainfo_folder\CV_info.bin)
+    Command:
+                Download:metainfo_folder/hehe_metainfo.json
+
+* Uploading case:
+    <cmd_type>: "Upload"
+    <params>:   Path of the uploaded file
+
+    Example: The user want to upload CV.pdf file to the Torrent (Path: \metainfo_folder\CV.pdf)
+    Command:
+                Upload:hehe.txt
+
+    -> Metainfo file of the uploaded file is created in metainfo_folder (Path: \metainfo_folder\)
+

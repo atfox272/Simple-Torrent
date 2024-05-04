@@ -1,0 +1,181 @@
+{
+  //////////////////////// HANDSHAKE /////////////////////////////////
+  "Handshake from PEER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "INIT",
+      "source_host": "127:0:0:1",
+      "source_port": 5000,
+      "seeder_host": "127:0:0:1",
+      "seeder_port": 5011
+    },
+    "BODY": {
+      "completed_list": [
+        {
+          "piece_path": "\\Torrent\\abc_pdf",
+          "info_hash": "a\tÆ´LV\u0004\u008A\u0083®M\u0006W\\\u008D:\u0087{ië",
+          "pieces": 30
+        },
+        {
+          "piece_path": "\\Torrent\\xyz_exe",
+          "info_hash": "b\tCD\u0003\u0082\u0081\u0006W\\\u008D:\u0087{yë",
+          "pieces": 20
+        },
+        {
+          "piece_path": "\\Torrent\\abc_txt",
+          "info_hash": "c\tAB\u0001\u0080\u0081\u0006A\\\u008D:\u0087{xë",
+          "pieces": 100
+        }
+      ]
+    }
+  },
+
+  "Handshake from TRACKER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "INIT_ACK",
+      "status": "100",
+      "source_host": "127:0:0:1",
+      "source_port": 5000
+    },
+    "BODY": {}
+  },
+
+  /////////////////////////////////////////////////////////////////////
+
+  //////////////////////// STARTED MESSGAGE /////////////////////////////////
+  "Start downloading message from PEER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "STARTED",
+      "source_host": "127:0:0:1",
+      "source_port": 5000,
+      "seeder_host": "127:0:0:1",
+      "seeder_port": 5011
+    },
+    "BODY": {
+      "peer_id": 0,
+      "info_hash": "34fj340f39j"
+    }
+  },
+
+  "response of start downloading message from TRACKER (Truong hop: CO PEER GIU FILE DO)": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "STARTED_ACK",
+      "status": "200",
+      "source_host": "127:0:0:1",
+      "source_port": 5000
+    },
+    "BODY": {
+      "peers": [
+        {"peer_id": "peer1", "ip": "192.168.1.1", "port": 6881},
+        {"peer_id": "peer2", "ip": "192.168.1.2", "port": 6882}
+      ]
+    }
+  },
+  "response of start downloading message from TRACKER (Truong hop: KHONG CO PEER GIU FILE DO)": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "STARTED_ACK",
+      "status": "404",
+      "source_host": "127:0:0:1",
+      "source_port": 5000
+    },
+    "BODY": {
+      "message": "No peers found for this torrent"
+    }
+  },
+
+  /////////////////////////////////////////////////////////////////////
+
+
+//////////////////////// COMPLETED MESSAGE /////////////////////////////////
+  "Completed message from PEER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "COMPLETED",
+      "source_host": "127:0:0:1",
+      "source_port": 5000,
+      "seeder_host": "127:0:0:1",
+      "seeder_port": 5011
+    },
+    "BODY": {
+      "peer_id": 0,
+      "info_hash": "34fj340f39j"
+    }
+  },
+//  "response of completed message from TRACKER": {
+//    "TOPIC": "TORRENT",
+//    "HEADER": {
+//      "event": "COMPLETED_ACK",
+//      "source_host": "127:0:0:1",
+//      "source_port": 5000
+//    },
+//    "BODY": {}
+//  },
+
+  /////////////////////////////////////////////////////////////////////
+
+
+
+  //////////////////////// STOPPED MESSAGE /////////////////////////////////
+  "Stopped message from PEER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "STOPPED",
+      "source_host": "127:0:0:1",
+      "source_port": 5000,
+      "seeder_host": "127:0:0:1",
+      "seeder_port": 5011
+    },
+    "BODY": {}
+  },
+
+  /////////////////////////////////////////////////////////////////////
+
+
+
+
+  //////////////////////// KEEP-ALIVE MESSAGE /////////////////////////////////
+  "Keep-alive message from TRACKER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "",
+      "status": "505",
+      "source_host": " 127:0:0:1",
+      "source_port": 5000
+    },
+    "BODY": {}
+  },
+  "response of keep-alive message from PEER": {
+    "TOPIC": "TORRENT",
+    "HEADER": {
+      "event": "CHECK_RESPONSE",
+      "source_host": "127:0:0:1",
+      "source_port": 5000,
+      "seeder_host": "127:0:0:1",
+      "seeder_port": 5011
+    },
+    "BODY": {
+      "completed_list": [
+        {
+          "piece_path": "\\Torrent\\abc_pdf",
+          "info_hash": "a\tÆ´LV\u0004\u008A\u0083®M\u0006W\\\u008D:\u0087{ië",
+          "pieces": 30
+        },
+        {
+          "piece_path": "\\Torrent\\xyz_exe",
+          "info_hash": "b\tCD\u0003\u0082\u0081\u0006W\\\u008D:\u0087{yë",
+          "pieces": 20
+        },
+        {
+          "piece_path": "\\Torrent\\abc_txt",
+          "info_hash": "c\tAB\u0001\u0080\u0081\u0006A\\\u008D:\u0087{xë",
+          "pieces": 100
+        }
+      ]
+    }
+  }
+
+}

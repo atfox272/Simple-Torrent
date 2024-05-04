@@ -1,0 +1,42 @@
+{
+    "security_code": "admin1",
+    "tracker_ip": "127.0.0.1",
+    "tracker_port": 5003,
+    "completed": [
+        {
+            "piece_path": "\\Torrent\\abc_pdf",
+            "info_hash": "a\t\u00c3\u2020\u00c2\u00b4LV\u0004\u008a\u0083\u00c2\u00aeM\u0006W\\\u008d:\u0087{i\u00c3\u00ab",
+            "pieces": 30
+        },
+        {
+            "piece_path": "\\Torrent\\xyz_exe",
+            "info_hash": "b\tCD\u0003\u0082\u0081\u0006W\\\u008d:\u0087{y\u00c3\u00ab",
+            "pieces": 20
+        },
+        {
+            "piece_path": "\\Torrent\\abc_txt",
+            "info_hash": "c\tAB\u0001\u0080\u0081\u0006A\\\u008d:\u0087{x\u00c3\u00ab",
+            "pieces": 100
+        }
+    ],
+    "uncompleted": [
+        {
+            "info_hash": "hehe",
+            "remain_pieces": [
+                1,
+                2,
+                3,
+                4
+            ]
+        },
+        {
+            "info_hash": "cn.pdf",
+            "remain_pieces": [
+                3,
+                4,
+                30,
+                50
+            ]
+        }
+    ]
+}

@@ -1,0 +1,7 @@
+{
+    "security_code": "admin1",
+    "tracker_ip": "localhost",
+    "tracker_port": 12345,
+    "completed": [],
+    "uncompleted": []
+}
