@@ -12,6 +12,8 @@ import hashlib
 
 
 class Peer:
+    # Peer mode (User mode or Supervisor mode for debugging)
+    SUPERVISOR_MODE = True  # Enable SUPERVISOR mode / Disable SUPERVISOR mode
 
     PIECE_SIZE = 16 * 1024 * 1024          # Unit: Bytes
     FTP_PAYLOAD_LENGTH = 4 * 1024 * 1024   # Unit: bytes
@@ -24,7 +26,7 @@ class Peer:
         self.seeder_socket = None
         self.client_socket = None
         self.peer_id = 0
-        self.peer_ui = PeerUI()
+        self.peer_ui = PeerUI(not self.SUPERVISOR_MODE == True)
         self.completed_list = []
         self.completed_list_lock = 0        # Multi-threading lock
         self.uncompleted_list = []
@@ -204,7 +206,7 @@ class Peer:
         self.completed_list_lock = 1
         # Update completed_list
         new_file_info = {
-            'piece_path': pieces_path,
+            'pieces_path': pieces_path,
             'info_hash': info_hash,
             'pieces': pieces_num
         }
@@ -324,8 +326,16 @@ class Peer:
             with open(f'metainfo_folder/{file_name}_metainfo.json', 'w') as f:
                 json.dump(new_item, f, indent=4)
 
+            if self.SUPERVISOR_MODE:
+                print(f'DEBUG: Metainfo {new_item}')
+
         add_to_completed(info_hash, new_folder_path, num_chunks)
         add_to_metainfo_file(file_name, info_hash, new_folder_path, num_chunks)
+
+        print(f'INFO: Create a torrent file from {file_path} completely')
+        print(f'INFO: The torrent file has been added to metainfo_folder/{file_name}_metainfo.json')
+        self.peer_ui.print_textbox_uploader(f'INFO: Create a torrent file from {file_path} completely')
+        self.peer_ui.print_textbox_uploader(f'INFO: The torrent file has been added to metainfo_folder/{file_name}_metainfo.json')
 
         return
 
@@ -460,7 +470,7 @@ class Peer:
             # Establish connection
             leecher_socket.connect(sender_address_in)
             # Set timeout
-            leecher_socket.settimeout(2) # Timeout 1 second
+            leecher_socket.settimeout(5) # Timeout 5 second
 
             # Handshake (on Application layer)
             self.send_message_seeder(leecher_socket=leecher_socket, mes_type='SYNC', source_ip=self.host,
@@ -504,9 +514,12 @@ class Peer:
                     response_seeder = self.receive_message_seeder(socket_in=leecher_socket)
                 except socket.timeout:
                     # Todo: mất kết nối đến seeder, đưa piece hiện tại vào trạng thái pending
-                    print('WARNING: Can not request a seeder for a piece. Close connection with the seeder')
-                    with lock_update_table:
-                        shared_table[piece_id_in] = 'pending'
+                    print('WARNING: Can not request a seeder for a piece. Re-connection with the seeder')
+                    # with lock_update_table:
+                    #     shared_table[piece_id_in] = 'pending'
+                    leecher_socket.close()
+                    sender_handle(shared_table, info_hash_in, piece_id_in, pieces_path_in, sender_address_in)
+                    return
                 # print(f'Debug(28): Leecher receives a packet with content: {response_seeder}')
                 # print(f'AFTER-STUCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK {piece_id_in}, packet: {response_seeder}')
 
@@ -542,8 +555,17 @@ class Peer:
                 self.peer_ui.print_textbox_downloader(
                     f'INFO: Successfully received piece with ID {piece_id_in}.')
                 # Receive completed message of seeder
-                response_seeder = None # Clear the buffer
-                response_seeder = self.receive_message_seeder(socket_in=leecher_socket)
+                # response_seeder = None # Clear the buffer
+                try:
+                    response_seeder = self.receive_message_seeder(socket_in=leecher_socket)
+                except socket.timeout:
+                    # with lock_update_table:
+                    #     shared_table[piece_id_in] = 'pending'
+                    leecher_socket.close()
+                    # Todo: re-connect
+                    sender_handle(shared_table, info_hash_in, piece_id_in, pieces_path_in, sender_address_in)
+                    return
+
                 if not self.message_seeder_checking(response_seeder, "HEADER", 'type'):
                     return
                 # Response checking
@@ -615,9 +637,9 @@ class Peer:
             print(f'INFO: The number of remaining pieces to download: {len(remain_pieces)} piece(s) ({remain_pieces})')
             self.peer_ui.print_textbox_downloader(
                 f'INFO: The number of remaining pieces to download: {len(remain_pieces)} piece(s) ({remain_pieces})')
-            print(f'INFO: Download: {((len(remain_pieces) / pieces_num) * 100):.1f}%')
+            print(f'INFO: Download: {(100 - (len(remain_pieces) / pieces_num) * 100):.1f}%')
             self.peer_ui.print_textbox_downloader(
-                f'INFO: Download: {((len(remain_pieces) / pieces_num) * 100):.1f}%')
+                f'INFO: Download: {(100 - (len(remain_pieces) / pieces_num) * 100):.1f}%')
             # Update every 0.5 second
             time.sleep(0.5)
 
@@ -638,8 +660,8 @@ class Peer:
         pieces_path_split = pieces_path.split('\\')
         folder_name = pieces_path_split[len(pieces_path_split) - 1]
         file_name = folder_name[:folder_name.rfind('_')] + '.' + folder_name[folder_name.rfind('_') + 1:]
-        print(f'INFO: The file has been added to the pieces_folder\\{file_name} directory')
-        self.peer_ui.print_textbox_downloader(f'INFO: The file has been added to the pieces_folder\\{file_name} directory')
+        print(f'INFO: The file has been added to the pieces_folder/{file_name} directory')
+        self.peer_ui.print_textbox_downloader(f'INFO: The file has been added to the pieces_folder/{file_name} directory')
         self.add_completed_list(pieces_path=pieces_path, info_hash=info_hash, pieces_num=pieces_num)
 
         # Send 'completed' message to the tracker

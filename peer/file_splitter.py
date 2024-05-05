@@ -12,7 +12,7 @@ def file_split(file_path: str, chunk_size: int):
                         break  # Đã đọc hết tệp
                     yield chunk
         except FileNotFoundError:
-            print(f"Error: Can not find {file_path}")
+            print(f"ERROR: Can not find {file_path}")
 
     # def save_chunks_to_directory(chunks: list, output_directory: str, file_name: str, file_exten: str):
     #     try:
