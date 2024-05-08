@@ -299,5 +299,5 @@ class TrackerServer:
             print('Server stopped.')
 
 if __name__ == '__main__':
-    server = TrackerServer('localhost', 12345)
+    server = TrackerServer('192.168.1.17', 12345)
     server.start()

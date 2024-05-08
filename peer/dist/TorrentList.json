@@ -1,0 +1,12 @@
+{
+    "security_code": "admin1",
+    "tracker_ip": "192.168.1.17",
+    "tracker_port": 12345,
+    "source_ip": "192.168.1.17",
+    "completed": [
+
+    ],
+    "uncompleted": [
+
+    ]
+}

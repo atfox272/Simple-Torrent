@@ -13,18 +13,19 @@ import hashlib
 
 class Peer:
     # Peer mode (User mode or Supervisor mode for debugging)
-    SUPERVISOR_MODE = True  # Enable SUPERVISOR mode / Disable SUPERVISOR mode
+    SUPERVISOR_MODE = False  # Enable SUPERVISOR mode / Disable SUPERVISOR mode
 
+    # Piece configuration
     PIECE_SIZE = 16 * 1024 * 1024          # Unit: Bytes
     FTP_PAYLOAD_LENGTH = 4 * 1024 * 1024   # Unit: bytes
 
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
-        self.seeder_host = host
+    def __init__(self):
+        self.client_host = None
+        self.client_port = None
+        self.client_socket = None
+        self.seeder_host = None
         self.seeder_port = None
         self.seeder_socket = None
-        self.client_socket = None
         self.peer_id = 0
         self.peer_ui = PeerUI(not self.SUPERVISOR_MODE == True)
         self.completed_list = []
@@ -44,6 +45,9 @@ class Peer:
             torrent_list = json.load(file)
         self.security_code = torrent_list["security_code"]
         self.tracker_address = (torrent_list["tracker_ip"], torrent_list["tracker_port"])
+        self.client_host = torrent_list["source_ip"]
+        self.seeder_host = torrent_list["source_ip"]
+        self.client_port = self.find_unused_port()
         self.completed_list = torrent_list["completed"]
         self.uncompleted_list = torrent_list["uncompleted"]
 
@@ -162,7 +166,7 @@ class Peer:
         for port_in in range(start_port, end_port + 1):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 try:
-                    s.bind(('localhost', port_in))
+                    s.bind((self.client_host, port_in))
                 except OSError:
                     # Port is already in use
                     continue
@@ -212,6 +216,12 @@ class Peer:
         }
         # Update new dictionary to list
         self.completed_list.append(new_file_info)
+        # Print completed list
+        self.peer_ui.print_textbox_torrent('--------------- Torrent file ---------------')
+        # print(self.completed_list)
+        for file in self.completed_list:
+            self.peer_ui.print_textbox_torrent(f'Pieces path: ' + file['pieces_path'])
+        self.peer_ui.print_textbox_torrent('--------------------------------------------')
         # Free the lock
         self.completed_list_lock = 0
     ########################## Misc method (end) ##########################################
@@ -303,7 +313,8 @@ class Peer:
             }
 
             # Add the new item to the 'self.completed_list' list
-            self.completed_list.append(new_item)
+            self.add_completed_list(pieces_path=pieces_path, info_hash=info_hash, pieces_num=pieces)
+
             # print(self.completed_list)
             # Write the data back to the file
             with open('TorrentList.json', 'w') as f:
@@ -466,14 +477,14 @@ class Peer:
             # Create a socket for Peers Protocol
             leecher_socket = socket.socket()
             # Bind the socket to address 
-            leecher_socket.bind((self.host, self.find_unused_port()))
+            leecher_socket.bind((self.client_host, self.find_unused_port()))
             # Establish connection
             leecher_socket.connect(sender_address_in)
             # Set timeout
             leecher_socket.settimeout(5) # Timeout 5 second
 
             # Handshake (on Application layer)
-            self.send_message_seeder(leecher_socket=leecher_socket, mes_type='SYNC', source_ip=self.host,
+            self.send_message_seeder(leecher_socket=leecher_socket, mes_type='SYNC', source_ip=self.client_host,
                                      source_ftp_port='None', info_hash='', piece_id='None')
             # print('Debug(15): Before receiving the response')
             response_seeder = self.receive_message_seeder(socket_in=leecher_socket)
@@ -496,7 +507,7 @@ class Peer:
                 leecher_ftp_socket = None
                 while True:
                     try:
-                        leecher_ftp_socket = FileReceiver(self.host, self.find_unused_port(start_port=10000), pieces_path_in)
+                        leecher_ftp_socket = FileReceiver(self.client_host, self.find_unused_port(start_port=10000), pieces_path_in)
                         leecher_ftp_socket.config_receiver(separator_in="<SEPARATOR>",
                                                            buffer_size_in=self.FTP_PAYLOAD_LENGTH)
                         break
@@ -723,8 +734,8 @@ class Peer:
             'TOPIC': 'TORRENT',
             'HEADER': {
                 'event': event,
-                'source_host': self.host,
-                'source_port': self.port,
+                'source_host': self.client_host,
+                'source_port': self.client_port,
                 'seeder_host': self.seeder_host,
                 'seeder_port': self.seeder_port
             },
@@ -884,8 +895,9 @@ class Peer:
             # Store completed_list and uncompleted_list
             loading_dict = {
                 "security_code": self.security_code,
-                "tracker_ip": self.host,
-                "tracker_port": self.port,
+                "tracker_ip": self.tracker_address[0],
+                "tracker_port": self.tracker_address[1],
+                "source_ip": self.client_host,
                 "completed": self.completed_list,
                 "uncompleted": self.uncompleted_list
             }
@@ -911,7 +923,7 @@ class Peer:
                 time.sleep(sec_delay)
 
     def leecher_handle(self, receiver_socket, listen_port):
-        def send_message_leecher(receiver_socket_in, msg_type, source_ip_in=self.host, source_port_in=listen_port, info_hash_in='None', piece_id_in='None'):
+        def send_message_leecher(receiver_socket_in, msg_type, source_ip_in=self.client_host, source_port_in=listen_port, info_hash_in='None', piece_id_in='None'):
             packet_in = {
                 "TOPIC": "UPLOADING",
                 "HEADER": {
@@ -934,7 +946,7 @@ class Peer:
 
         # print('Debug(0): ', packet)
         if packet['HEADER']['type'] == "SYNC":  # If SYNC, then SYNC accept
-            send_message_leecher(receiver_socket_in=receiver_socket, msg_type='SYNC_ACK', source_ip_in=self.host, source_port_in=listen_port)
+            send_message_leecher(receiver_socket_in=receiver_socket, msg_type='SYNC_ACK', source_ip_in=self.client_host, source_port_in=listen_port)
             # self.send_message(receiver_socket, packet)
 
         while True:
@@ -990,7 +1002,7 @@ class Peer:
                 print('INFO: Sending a piece')
                 self.peer_ui.print_textbox_uploader('INFO: Sending a piece')
 
-                send_message_leecher(receiver_socket_in=receiver_socket, msg_type='ACK', source_ip_in=self.host,
+                send_message_leecher(receiver_socket_in=receiver_socket, msg_type='ACK', source_ip_in=self.client_host,
                                      source_port_in=listen_port, info_hash_in=packet['HEADER']['info_hash'],
                                      piece_id_in=piece_id)
 
@@ -1006,13 +1018,13 @@ class Peer:
                 # print(f'DEBUGG: SENDDDDDD {send_successed} piece with ID {piece_id} xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
             else:
                 # Nếu sender ko có file đó
-                send_message_leecher(receiver_socket_in=receiver_socket, msg_type='NACK', source_ip_in=self.host,
+                send_message_leecher(receiver_socket_in=receiver_socket, msg_type='NACK', source_ip_in=self.client_host,
                                      source_port_in=listen_port, info_hash_in=packet['HEADER']['info_hash'],
                                      piece_id_in=piece_id)
 
             if send_successed:
                 # print(f'DEBUGG: send a piece with ID {piece_id} +++++++++++++++++++')
-                send_message_leecher(receiver_socket_in=receiver_socket, msg_type='COMPLETED', source_ip_in=self.host,
+                send_message_leecher(receiver_socket_in=receiver_socket, msg_type='COMPLETED', source_ip_in=self.client_host,
                                      source_port_in=listen_port, info_hash_in=packet['HEADER']['info_hash'],
                                      piece_id_in=piece_id)
                 print(f'INFO: Send a piece with ID {piece_id} to leecher successfully')
@@ -1060,7 +1072,7 @@ class Peer:
         self.client_socket = socket.socket()
 
         # Bind the socket to address and port
-        self.client_socket.bind((self.host, self.port))
+        self.client_socket.bind((self.client_host, self.client_port))
 
         # Create a seeder socket
         self.seeder_init()
@@ -1111,6 +1123,6 @@ def find_unused_port(start_port=5003, end_port=65535):
 if __name__ == '__main__':
     port = find_unused_port()
     print(f'INFO: Port {port}')
-    peer = Peer('127.0.0.1', port)
+    peer = Peer()
     peer.start()
     print('--------End-----------')
